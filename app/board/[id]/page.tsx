@@ -53,6 +53,23 @@ export default function BoardPage() {
     fetchData();
   }, [id]);
 
+  const handleStatusChange = async (task: Task, newStatus: TaskStatus) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
+    );
+    await fetch(`/api/tasks/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: task.title,
+        description: task.description,
+        status: newStatus,
+        priority: task.priority,
+        due_date: task.due_date,
+      }),
+    });
+  };
+
   const tasksByStatus = useMemo(() => {
     const map: Record<TaskStatus, Task[]> = { todo: [], in_progress: [], done: [] };
     for (const task of tasks) {
@@ -138,6 +155,7 @@ export default function BoardPage() {
                       onClick={() =>
                         setModal({ open: true, task, defaultStatus: task.status })
                       }
+                      onStatusChange={(newStatus) => handleStatusChange(task, newStatus)}
                     />
                   ))}
                   {columnTasks.length === 0 && (
