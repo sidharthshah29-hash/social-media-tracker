@@ -12,7 +12,10 @@ export async function GET(request: Request) {
     .select('*, clients(name, color)')
     .order('created_at', { ascending: false });
 
+  const status = searchParams.get('status');
+
   if (clientId) query = query.eq('client_id', clientId);
+  if (status) query = query.eq('status', status);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

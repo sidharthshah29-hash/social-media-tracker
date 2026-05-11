@@ -2,11 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Client } from '@/lib/types';
+import { Client, Task } from '@/lib/types';
+
+type Filter = 'total' | 'in_progress' | null;
+
+const PRIORITY_COLORS: Record<string, string> = {
+  high: 'bg-red-100 text-red-700',
+  medium: 'bg-amber-100 text-amber-700',
+  low: 'bg-gray-100 text-gray-600',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  todo: 'bg-gray-100 text-gray-600',
+  in_progress: 'bg-blue-100 text-blue-700',
+  done: 'bg-green-100 text-green-700',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  done: 'Done',
+};
 
 export default function Dashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<Filter>(null);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/clients')
@@ -28,6 +51,24 @@ export default function Dashboard() {
   );
   const totalActive = clients.reduce((sum, c) => sum + Number(c.in_progress_count || 0), 0);
 
+  function handleStatClick(filter: Filter) {
+    if (activeFilter === filter) {
+      setActiveFilter(null);
+      setFilteredTasks([]);
+      return;
+    }
+    setActiveFilter(filter);
+    setTasksLoading(true);
+    const url = filter === 'in_progress' ? '/api/tasks?status=in_progress' : '/api/tasks';
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        setFilteredTasks(Array.isArray(data) ? data : []);
+        setTasksLoading(false);
+      })
+      .catch(() => setTasksLoading(false));
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -45,17 +86,84 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Total Clients', value: clients.length, bg: 'bg-blue-50', text: 'text-blue-700' },
-          { label: 'In Progress', value: totalActive, bg: 'bg-amber-50', text: 'text-amber-700' },
-          { label: 'Total Tasks', value: totalTasks, bg: 'bg-gray-100', text: 'text-gray-700' },
-        ].map(({ label, value, bg, text }) => (
-          <div key={label} className={`rounded-xl p-5 ${bg}`}>
-            <p className={`text-3xl font-bold ${text}`}>{value}</p>
-            <p className={`text-sm mt-1 ${text} opacity-75`}>{label}</p>
-          </div>
-        ))}
+        <div className="rounded-xl p-5 bg-blue-50">
+          <p className="text-3xl font-bold text-blue-700">{clients.length}</p>
+          <p className="text-sm mt-1 text-blue-700 opacity-75">Total Clients</p>
+        </div>
+
+        <button
+          onClick={() => handleStatClick('in_progress')}
+          className={`rounded-xl p-5 text-left transition-all ${
+            activeFilter === 'in_progress'
+              ? 'bg-amber-200 ring-2 ring-amber-400'
+              : 'bg-amber-50 hover:bg-amber-100'
+          }`}
+        >
+          <p className="text-3xl font-bold text-amber-700">{totalActive}</p>
+          <p className="text-sm mt-1 text-amber-700 opacity-75">In Progress</p>
+        </button>
+
+        <button
+          onClick={() => handleStatClick('total')}
+          className={`rounded-xl p-5 text-left transition-all ${
+            activeFilter === 'total'
+              ? 'bg-gray-200 ring-2 ring-gray-400'
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+        >
+          <p className="text-3xl font-bold text-gray-700">{totalTasks}</p>
+          <p className="text-sm mt-1 text-gray-700 opacity-75">Total Tasks</p>
+        </button>
       </div>
+
+      {/* Filtered task panel */}
+      {activeFilter && (
+        <div className="mb-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
+            <h2 className="font-semibold text-gray-700 text-sm">
+              {activeFilter === 'in_progress' ? 'In Progress Tasks' : 'All Tasks'}
+            </h2>
+            <button
+              onClick={() => { setActiveFilter(null); setFilteredTasks([]); }}
+              className="text-gray-400 hover:text-gray-600 text-xs"
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          {tasksLoading ? (
+            <div className="p-8 text-center text-gray-400 text-sm animate-pulse">Loading tasks…</div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">No tasks found.</div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {filteredTasks.map((task) => (
+                <li key={task.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: task.client_color || '#ccc' }}
+                  />
+                  <span className="flex-1 text-sm text-gray-800 font-medium truncate">{task.title}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">{task.client_name}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLORS[task.status]}`}>
+                    {STATUS_LABELS[task.status]}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${PRIORITY_COLORS[task.priority]}`}>
+                    {task.priority}
+                  </span>
+                  <Link
+                    href={`/board/${task.client_id}`}
+                    className="text-xs text-blue-500 hover:text-blue-700 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View →
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {clients.length === 0 ? (
         <div className="text-center py-24">
