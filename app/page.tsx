@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Client, Task } from '@/lib/types';
 
 type Filter = 'total' | 'in_progress' | null;
+type ViewMode = 'real' | 'potential';
 
 const PRIORITY_COLORS: Record<string, string> = {
   high: 'bg-red-100 text-red-700',
@@ -27,6 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function Dashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('real');
   const [activeFilter, setActiveFilter] = useState<Filter>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -41,7 +43,11 @@ export default function Dashboard() {
       .catch(() => setLoading(false));
   }, []);
 
-  const totalTasks = clients.reduce(
+  const visibleClients = clients.filter((c) =>
+    viewMode === 'potential' ? c.is_potential : !c.is_potential
+  );
+
+  const totalTasks = visibleClients.reduce(
     (sum, c) =>
       sum +
       Number(c.todo_count || 0) +
@@ -49,7 +55,10 @@ export default function Dashboard() {
       Number(c.done_count || 0),
     0
   );
-  const totalActive = clients.reduce((sum, c) => sum + Number(c.in_progress_count || 0), 0);
+  const totalActive = visibleClients.reduce((sum, c) => sum + Number(c.in_progress_count || 0), 0);
+
+  const realCount = clients.filter((c) => !c.is_potential).length;
+  const potentialCount = clients.filter((c) => c.is_potential).length;
 
   function handleStatClick(filter: Filter) {
     if (activeFilter === filter) {
@@ -79,16 +88,42 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Overview of all your client work</p>
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Overview of all your client work</p>
+        </div>
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+          <button
+            onClick={() => { setViewMode('real'); setActiveFilter(null); setFilteredTasks([]); }}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'real'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Clients {realCount > 0 && <span className="ml-1 text-xs text-gray-400">{realCount}</span>}
+          </button>
+          <button
+            onClick={() => { setViewMode('potential'); setActiveFilter(null); setFilteredTasks([]); }}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'potential'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Potential {potentialCount > 0 && <span className="ml-1 text-xs text-gray-400">{potentialCount}</span>}
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="rounded-xl p-5 bg-blue-50">
-          <p className="text-3xl font-bold text-blue-700">{clients.length}</p>
-          <p className="text-sm mt-1 text-blue-700 opacity-75">Total Clients</p>
+          <p className="text-3xl font-bold text-blue-700">{visibleClients.length}</p>
+          <p className="text-sm mt-1 text-blue-700 opacity-75">
+            {viewMode === 'potential' ? 'Potential Clients' : 'Total Clients'}
+          </p>
         </div>
 
         <button
@@ -165,7 +200,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {clients.length === 0 ? (
+      {visibleClients.length === 0 ? (
         <div className="text-center py-24">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,7 +218,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clients.map((client) => {
+          {visibleClients.map((client) => {
             const total =
               Number(client.todo_count || 0) +
               Number(client.in_progress_count || 0) +

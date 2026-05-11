@@ -2,6 +2,7 @@ export interface Client {
   id: number;
   name: string;
   color: string;
+  is_potential: boolean;
   created_at: string;
   todo_count?: number;
   in_progress_count?: number;

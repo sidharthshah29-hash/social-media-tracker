@@ -19,14 +19,14 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { name, color } = await request.json();
+  const { name, color, is_potential } = await request.json();
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 });
   }
 
   const { data, error } = await supabase
     .from('clients')
-    .update({ name: name.trim(), color })
+    .update({ name: name.trim(), color, is_potential: is_potential ?? false })
     .eq('id', params.id)
     .select()
     .single();

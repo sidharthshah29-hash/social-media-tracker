@@ -4,14 +4,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Client, COLORS } from '@/lib/types';
 
+type ViewMode = 'real' | 'potential';
+
 export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('real');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLORS[0]);
+  const [isPotential, setIsPotential] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const fetchClients = () => {
@@ -28,10 +32,15 @@ export default function ClientsPage() {
     fetchClients();
   }, []);
 
+  const visible = clients.filter((c) =>
+    viewMode === 'potential' ? c.is_potential : !c.is_potential
+  );
+
   function openAdd() {
     setEditing(null);
     setName('');
     setColor(COLORS[clients.length % COLORS.length]);
+    setIsPotential(viewMode === 'potential');
     setShowForm(true);
   }
 
@@ -39,6 +48,7 @@ export default function ClientsPage() {
     setEditing(client);
     setName(client.name);
     setColor(client.color);
+    setIsPotential(client.is_potential);
     setShowForm(true);
   }
 
@@ -46,6 +56,7 @@ export default function ClientsPage() {
     setShowForm(false);
     setEditing(null);
     setName('');
+    setIsPotential(false);
   }
 
   async function handleSave() {
@@ -57,7 +68,7 @@ export default function ClientsPage() {
       await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), color }),
+        body: JSON.stringify({ name: name.trim(), color, is_potential: isPotential }),
       });
       closeForm();
       fetchClients();
@@ -82,13 +93,16 @@ export default function ClientsPage() {
     router.refresh();
   }
 
+  const realCount = clients.filter((c) => !c.is_potential).length;
+  const potentialCount = clients.filter((c) => c.is_potential).length;
+
   return (
     <div className="p-8 max-w-3xl">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
           <p className="text-gray-500 mt-1">
-            {clients.length} client{clients.length !== 1 ? 's' : ''}
+            {realCount} client{realCount !== 1 ? 's' : ''} &middot; {potentialCount} potential
           </p>
         </div>
         <button
@@ -102,26 +116,52 @@ export default function ClientsPage() {
         </button>
       </div>
 
+      {/* View toggle */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
+        <button
+          onClick={() => setViewMode('real')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+            viewMode === 'real'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Clients {realCount > 0 && <span className="ml-1 text-xs text-gray-400">{realCount}</span>}
+        </button>
+        <button
+          onClick={() => setViewMode('potential')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+            viewMode === 'potential'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Potential {potentialCount > 0 && <span className="ml-1 text-xs text-gray-400">{potentialCount}</span>}
+        </button>
+      </div>
+
       {loading ? (
         <div className="animate-pulse text-gray-400">Loading...</div>
-      ) : clients.length === 0 ? (
+      ) : visible.length === 0 ? (
         <div className="text-center py-24">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">No clients yet</h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            No {viewMode === 'potential' ? 'potential clients' : 'clients'} yet
+          </h2>
           <button
             onClick={openAdd}
             className="mt-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
           >
-            Add your first client
+            Add {viewMode === 'potential' ? 'potential client' : 'first client'}
           </button>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {clients.map((client) => {
+          {visible.map((client) => {
             const total =
               Number(client.todo_count || 0) +
               Number(client.in_progress_count || 0) +
@@ -136,7 +176,14 @@ export default function ClientsPage() {
                   style={{ backgroundColor: client.color }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900">{client.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900">{client.name}</p>
+                    {client.is_potential && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                        Potential
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-400">
                     {total} task{total !== 1 ? 's' : ''} &middot; {client.todo_count || 0} to do
                     &middot; {client.in_progress_count || 0} in progress
@@ -210,7 +257,29 @@ export default function ClientsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Potential client toggle */}
+              <div className="flex items-center justify-between py-1">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Potential client</p>
+                  <p className="text-xs text-gray-400">Not yet a confirmed client</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPotential((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    isPotential ? 'bg-purple-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      isPotential ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
+
             <div className="flex gap-2 mt-6 justify-end">
               <button
                 onClick={closeForm}
