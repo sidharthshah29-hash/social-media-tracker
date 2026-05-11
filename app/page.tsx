@@ -87,8 +87,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8 max-w-6xl">
-      <div className="flex items-start justify-between mb-8">
+    <div className="p-4 md:p-8 max-w-6xl">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 mt-1">Overview of all your client work</p>
@@ -118,36 +118,36 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="rounded-xl p-5 bg-blue-50">
-          <p className="text-3xl font-bold text-blue-700">{visibleClients.length}</p>
-          <p className="text-sm mt-1 text-blue-700 opacity-75">
-            {viewMode === 'potential' ? 'Potential Clients' : 'Total Clients'}
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-8">
+        <div className="rounded-xl p-3 md:p-5 bg-blue-50">
+          <p className="text-2xl md:text-3xl font-bold text-blue-700">{visibleClients.length}</p>
+          <p className="text-xs md:text-sm mt-1 text-blue-700 opacity-75">
+            {viewMode === 'potential' ? 'Potential' : 'Clients'}
           </p>
         </div>
 
         <button
           onClick={() => handleStatClick('in_progress')}
-          className={`rounded-xl p-5 text-left transition-all ${
+          className={`rounded-xl p-3 md:p-5 text-left transition-all ${
             activeFilter === 'in_progress'
               ? 'bg-amber-200 ring-2 ring-amber-400'
               : 'bg-amber-50 hover:bg-amber-100'
           }`}
         >
-          <p className="text-3xl font-bold text-amber-700">{totalActive}</p>
-          <p className="text-sm mt-1 text-amber-700 opacity-75">In Progress</p>
+          <p className="text-2xl md:text-3xl font-bold text-amber-700">{totalActive}</p>
+          <p className="text-xs md:text-sm mt-1 text-amber-700 opacity-75">In Progress</p>
         </button>
 
         <button
           onClick={() => handleStatClick('total')}
-          className={`rounded-xl p-5 text-left transition-all ${
+          className={`rounded-xl p-3 md:p-5 text-left transition-all ${
             activeFilter === 'total'
               ? 'bg-gray-200 ring-2 ring-gray-400'
               : 'bg-gray-100 hover:bg-gray-200'
           }`}
         >
-          <p className="text-3xl font-bold text-gray-700">{totalTasks}</p>
-          <p className="text-sm mt-1 text-gray-700 opacity-75">Total Tasks</p>
+          <p className="text-2xl md:text-3xl font-bold text-gray-700">{totalTasks}</p>
+          <p className="text-xs md:text-sm mt-1 text-gray-700 opacity-75">Total Tasks</p>
         </button>
       </div>
 

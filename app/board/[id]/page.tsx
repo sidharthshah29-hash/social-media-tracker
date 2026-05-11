@@ -100,7 +100,7 @@ export default function BoardPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Board header */}
-      <div className="flex items-center gap-4 px-8 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 md:px-8 py-3 md:py-4 border-b border-gray-200 bg-white flex-shrink-0">
         <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -122,11 +122,11 @@ export default function BoardPage() {
 
       {/* Kanban columns */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex gap-5 p-6 h-full" style={{ minWidth: 'max-content' }}>
+        <div className="flex gap-4 p-3 md:p-6 h-full" style={{ minWidth: 'max-content' }}>
           {COLUMNS.map(({ status, label, accent }) => {
             const columnTasks = tasksByStatus[status];
             return (
-              <div key={status} className="w-72 flex flex-col bg-gray-50 rounded-xl">
+              <div key={status} className="w-64 md:w-72 flex flex-col bg-gray-50 rounded-xl">
                 {/* Column header */}
                 <div className={`flex items-center justify-between px-4 py-3 border-b-2 ${accent}`}>
                   <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export default function BoardPage() {
                 </div>
 
                 {/* Task list */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                <div className="flex-1 overflow-y-auto p-3 pb-20 md:pb-3 space-y-2">
                   {columnTasks.map((task) => (
                     <TaskCard
                       key={task.id}

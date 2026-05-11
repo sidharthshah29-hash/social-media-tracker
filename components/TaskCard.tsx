@@ -54,11 +54,11 @@ export default function TaskCard({ task, onClick, onStatusChange }: Props) {
               })}
             </span>
           )}
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             {prevStatus && (
               <button
                 onClick={(e) => { e.stopPropagation(); onStatusChange(prevStatus); }}
-                className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="w-7 h-7 md:w-5 md:h-5 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                 title="Move back"
               >
                 ←
@@ -67,7 +67,7 @@ export default function TaskCard({ task, onClick, onStatusChange }: Props) {
             {nextStatus && (
               <button
                 onClick={(e) => { e.stopPropagation(); onStatusChange(nextStatus); }}
-                className="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                className="w-7 h-7 md:w-5 md:h-5 flex items-center justify-center rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                 title="Move forward"
               >
                 →
