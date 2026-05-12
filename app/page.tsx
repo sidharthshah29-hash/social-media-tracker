@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Client, Task } from '@/lib/types';
 
-type Filter = 'total' | 'in_progress' | null;
+type Filter = 'total' | 'in_progress' | 'done' | null;
 type ViewMode = 'real' | 'potential';
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -48,13 +48,10 @@ export default function Dashboard() {
   );
 
   const totalTasks = visibleClients.reduce(
-    (sum, c) =>
-      sum +
-      Number(c.todo_count || 0) +
-      Number(c.in_progress_count || 0) +
-      Number(c.done_count || 0),
+    (sum, c) => sum + Number(c.todo_count || 0) + Number(c.in_progress_count || 0),
     0
   );
+  const totalDone = visibleClients.reduce((sum, c) => sum + Number(c.done_count || 0), 0);
   const totalActive = visibleClients.reduce((sum, c) => sum + Number(c.in_progress_count || 0), 0);
 
   const realCount = clients.filter((c) => !c.is_potential).length;
@@ -68,11 +65,15 @@ export default function Dashboard() {
     }
     setActiveFilter(filter);
     setTasksLoading(true);
-    const url = filter === 'in_progress' ? '/api/tasks?status=in_progress' : '/api/tasks';
+    const url =
+      filter === 'in_progress' ? '/api/tasks?status=in_progress' :
+      filter === 'done' ? '/api/tasks?status=done' :
+      '/api/tasks';
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        setFilteredTasks(Array.isArray(data) ? data : []);
+        const tasks = Array.isArray(data) ? data : [];
+        setFilteredTasks(filter === 'total' ? tasks.filter((t) => t.status !== 'done') : tasks);
         setTasksLoading(false);
       })
       .catch(() => setTasksLoading(false));
@@ -118,7 +119,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-8">
         <div className="rounded-xl p-3 md:p-5 bg-blue-50">
           <p className="text-2xl md:text-3xl font-bold text-blue-700">{visibleClients.length}</p>
           <p className="text-xs md:text-sm mt-1 text-blue-700 opacity-75">
@@ -147,7 +148,19 @@ export default function Dashboard() {
           }`}
         >
           <p className="text-2xl md:text-3xl font-bold text-gray-700">{totalTasks}</p>
-          <p className="text-xs md:text-sm mt-1 text-gray-700 opacity-75">Total Tasks</p>
+          <p className="text-xs md:text-sm mt-1 text-gray-700 opacity-75">Active Tasks</p>
+        </button>
+
+        <button
+          onClick={() => handleStatClick('done')}
+          className={`rounded-xl p-3 md:p-5 text-left transition-all ${
+            activeFilter === 'done'
+              ? 'bg-green-200 ring-2 ring-green-400'
+              : 'bg-green-50 hover:bg-green-100'
+          }`}
+        >
+          <p className="text-2xl md:text-3xl font-bold text-green-700">{totalDone}</p>
+          <p className="text-xs md:text-sm mt-1 text-green-700 opacity-75">Completed</p>
         </button>
       </div>
 
@@ -156,7 +169,9 @@ export default function Dashboard() {
         <div className="mb-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
             <h2 className="font-semibold text-gray-700 text-sm">
-              {activeFilter === 'in_progress' ? 'In Progress Tasks' : 'All Tasks'}
+              {activeFilter === 'in_progress' ? 'In Progress Tasks' :
+               activeFilter === 'done' ? 'Completed Tasks' :
+               'Active Tasks'}
             </h2>
             <button
               onClick={() => { setActiveFilter(null); setFilteredTasks([]); }}
