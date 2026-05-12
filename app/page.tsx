@@ -69,11 +69,14 @@ export default function Dashboard() {
       filter === 'in_progress' ? '/api/tasks?status=in_progress' :
       filter === 'done' ? '/api/tasks?status=done' :
       '/api/tasks';
+    const visibleClientIds = new Set(visibleClients.map((c) => c.id));
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        const tasks = Array.isArray(data) ? data : [];
-        setFilteredTasks(filter === 'total' ? tasks.filter((t) => t.status !== 'done') : tasks);
+        let tasks = Array.isArray(data) ? data : [];
+        tasks = tasks.filter((t) => visibleClientIds.has(t.client_id));
+        if (filter === 'total') tasks = tasks.filter((t) => t.status !== 'done');
+        setFilteredTasks(tasks);
         setTasksLoading(false);
       })
       .catch(() => setTasksLoading(false));
